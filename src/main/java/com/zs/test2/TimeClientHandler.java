@@ -2,9 +2,7 @@ package com.zs.test2;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -79,14 +77,16 @@ public class TimeClientHandler implements Runnable {
         if (key.isValid()) {
             SocketChannel channel = (SocketChannel) key.channel();
             if (key.isConnectable()) {
-                if (socketCannel.finishConnect()) {
-                    socketCannel.register(selector, SelectionKey.OP_READ);
-                    doWrite();
+                if (channel.finishConnect()) {
+                    channel.register(selector, SelectionKey.OP_READ);
+                    doWrite(channel);
+                } else {
+                    System.exit(1);
                 }
             }
             if (key.isReadable()) {
                 ByteBuffer readBuffer = ByteBuffer.allocate(1024);
-                int read = socketCannel.read(readBuffer);
+                int read = channel.read(readBuffer);
                 if (read > 0) {
                     readBuffer.flip();
                     byte[] bytes = new byte[readBuffer.remaining()];
@@ -102,18 +102,18 @@ public class TimeClientHandler implements Runnable {
     private void doConnet() throws IOException {
         if (socketCannel.connect(new InetSocketAddress(host, port))) {
             socketCannel.register(selector, SelectionKey.OP_READ);
-            doWrite();
+            doWrite(socketCannel);
         } else {
             socketCannel.register(selector, SelectionKey.OP_CONNECT);
         }
     }
 
-    private void doWrite() throws IOException {
+    private void doWrite(SocketChannel channel) throws IOException {
         byte[] req = "QUERY TIME ORDER".getBytes();
         ByteBuffer writeBuffer = ByteBuffer.allocate(req.length);
         writeBuffer.put(req);
         writeBuffer.flip();
-        socketCannel.write(writeBuffer);
+        channel.write(writeBuffer);
 
         if (!writeBuffer.hasRemaining()) {
             System.out.println("Send order 2 server succeed.");
