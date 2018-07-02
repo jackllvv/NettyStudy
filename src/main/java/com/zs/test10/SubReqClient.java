@@ -1,8 +1,7 @@
-package com.zs.test7;
+package com.zs.test10;
 
+import com.zs.netty.codec.protobuf.SubScribeRespProto;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -10,17 +9,18 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
-import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.protobuf.ProtobufDecoder;
+import io.netty.handler.codec.protobuf.ProtobufEncoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 
 /**
  * @author : zhousong
- * Create in 2018/6/29
+ * Create in 2018/7/2
  */
-public class EchoClient {
+public class SubReqClient {
 
     public void connect(int port, String host) throws Exception {
-
         EventLoopGroup group = new NioEventLoopGroup();
 
         try {
@@ -30,20 +30,23 @@ public class EchoClient {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            ByteBuf delimter = Unpooled.copiedBuffer("$_".getBytes());
-                            ch.pipeline().addLast(new DelimiterBasedFrameDecoder(1024, delimter));
-                            ch.pipeline().addLast(new StringDecoder());
-                            ch.pipeline().addLast(new EchoClientHandler());
+                            ch.pipeline().addLast(new ProtobufVarint32FrameDecoder());
+                            ch.pipeline().addLast(new ProtobufDecoder(SubScribeRespProto.SubscribeResp.getDefaultInstance()));
+                            ch.pipeline().addLast(new ProtobufVarint32LengthFieldPrepender());
+                            ch.pipeline().addLast(new ProtobufEncoder());
+                            ch.pipeline().addLast(new SubReqClientHandler());
                         }
                     });
+
             ChannelFuture f = b.connect(host, port).sync();
+
             f.channel().closeFuture().sync();
         } finally {
             group.shutdownGracefully();
         }
     }
 
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
         int port = 8080;
         if (args != null && args.length > 0) {
             try {
@@ -52,7 +55,6 @@ public class EchoClient {
             }
         }
 
-        new EchoClient().connect(port, "127.0.0.1");
+        new SubReqClient().connect(port, "127.0.0.1");
     }
-
 }
