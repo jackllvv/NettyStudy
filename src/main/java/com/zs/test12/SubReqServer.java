@@ -26,6 +26,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
+import java.io.IOException;
+
 /**
  * @author lilinfeng
  * @date 2014年2月14日
@@ -44,7 +46,7 @@ public class SubReqServer {
 		    .handler(new LoggingHandler(LogLevel.INFO))
 		    .childHandler(new ChannelInitializer<SocketChannel>() {
 			@Override
-			public void initChannel(SocketChannel ch) {
+			public void initChannel(SocketChannel ch) throws IOException {
 			    ch.pipeline().addLast(
 				    MarshallingCodeCFactory
 					    .buildMarshallingDecoder());
